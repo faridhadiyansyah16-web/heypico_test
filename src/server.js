@@ -143,22 +143,45 @@ app.post('/api/llm/search', async (req, res) => {
   const { prompt, location, radiusMeters = 5000, origin } = parsed.data
   try {
     const query = await extractQueryWithLLM(prompt)
-    const data = await placesTextSearch({ query, location, radiusMeters })
-    const results = (data.results || []).map((r) => {
-      const placeId = r.place_id
-      const link = mapsLink(placeId, r.name)
-      const embed = origin ? embedDirectionsUrl(origin, placeId) : embedPlaceUrl(placeId)
-      return {
-        name: r.name,
-        address: r.formatted_address,
-        location: r.geometry?.location,
-        rating: r.rating,
-        user_ratings_total: r.user_ratings_total,
-        place_id: placeId,
+    let data
+    try {
+      data = await placesTextSearch({ query, location, radiusMeters })
+    } catch (e) {
+      data = null
+    }
+    let results
+    if (data && Array.isArray(data.results)) {
+      results = data.results.map((r) => {
+        const placeId = r.place_id
+        const link = mapsLink(placeId, r.name)
+        const embed = origin ? embedDirectionsUrl(origin, placeId) : embedPlaceUrl(placeId)
+        return {
+          name: r.name,
+          address: r.formatted_address,
+          location: r.geometry?.location,
+          rating: r.rating,
+          user_ratings_total: r.user_ratings_total,
+          place_id: placeId,
+          maps_link: link,
+          embed_url: embed,
+        }
+      })
+    } else {
+      const link = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+      const embed = origin
+        ? `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(GOOGLE_MAPS_BROWSER_KEY)}&origin=${encodeURIComponent(`${origin.lat},${origin.lng}`)}&destination=${encodeURIComponent(query)}`
+        : `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(GOOGLE_MAPS_BROWSER_KEY)}&q=${encodeURIComponent(query)}`
+      results = [{
+        name: query,
+        address: undefined,
+        location: undefined,
+        rating: undefined,
+        user_ratings_total: undefined,
+        place_id: undefined,
         maps_link: link,
         embed_url: embed,
-      }
-    })
+      }]
+    }
     res.json({ query, results })
   } catch (err) {
     console.error('Search failed', err?.response?.data || err?.message)
