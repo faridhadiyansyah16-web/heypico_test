@@ -59,7 +59,7 @@ async function doSearch(){
           <div class="muted">${r.address||''}</div>
           <div class="muted">Rating: ${r.rating||'-'} (${r.user_ratings_total||0})</div>
           <div class="actions">
-            <a href="${r.maps_link}" target="_blank">Open in Google Maps</a>
+            <a href="${r.maps_link}" target="_blank" rel="noopener">Open in Google Maps</a>
             <button data-embed="${r.embed_url}">View Map</button>
           </div>
         </div>
@@ -69,6 +69,7 @@ async function doSearch(){
         const src = btn.getAttribute('data-embed')
         const iframe = document.createElement('iframe')
         iframe.src = src
+        iframe.referrerPolicy = 'origin'
         node.appendChild(iframe)
       })
       resultsEl.appendChild(node)
@@ -82,4 +83,3 @@ async function doSearch(){
 
 geoBothBtn.addEventListener('click', useGeo)
 searchBtn.addEventListener('click', doSearch)
-

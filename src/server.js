@@ -15,6 +15,7 @@ const GOOGLE_MAPS_BROWSER_KEY = process.env.GOOGLE_MAPS_BROWSER_KEY || ''
 const GOOGLE_MAPS_SERVER_KEY = process.env.GOOGLE_MAPS_SERVER_KEY || ''
 
 const LLM_PROVIDER = process.env.LLM_PROVIDER || 'ollama'
+const LLM_DISABLED = (process.env.LLM_DISABLED === '1') || (LLM_PROVIDER === 'none')
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || ''
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434'
@@ -60,6 +61,7 @@ async function extractQueryWithLLM(prompt) {
   const system = 'You help translate user requests into concise place search queries. Output ONLY a short query like "best ramen near Shibuya" or a category like "coffee shop in Boston". No extra text.'
   const defaultQuery = prompt.trim().slice(0, 128)
   try {
+    if (LLM_DISABLED) return defaultQuery
     if (LLM_PROVIDER === 'openai' && OPENAI_API_KEY) {
       const resp = await axios.post(
         `${OPENAI_BASE_URL}/chat/completions`,
@@ -213,7 +215,7 @@ app.get('/map', (req, res) => {
     </head>
     <body>
       <div class="wrap">
-        <iframe src="${src}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <iframe src="${src}" allowfullscreen loading="lazy" referrerpolicy="origin"></iframe>
       </div>
     </body>
   </html>`
